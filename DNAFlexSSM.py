@@ -12,7 +12,11 @@
 #
 
 from mug import datatypes as mug_datatypes
-from . import DNAFlexibility
+from DNAFlexibility import DNAFlexibility
+
+from pycompss.api.task import task
+from pycompss.api.constraint import constraint
+from pycompss.api.parameter import IN, OUT
 
 #------------------------------------------------------------------------------
 __doc__ = """\
@@ -32,7 +36,6 @@ compression and analysis of molecular simulation data. SoftwareX.
 [2] Pasi,M., Triantafyliou,S., Shkurti,A. and Laughton,C.A. (2016) The
 Sequence-Dependence of DNA Structure and Flexibility - Lessons From
 The muABC Dataset. in preparation
-
 """
 
 #------------------------------------------------------------------------------
@@ -40,7 +43,7 @@ def read_fasta(fname):
     """Get the sequence from a fasta-format file."""
     seq = ""
     with open(fname,'r') as f:
-        f.readline()
+        f.readline() # skip header
         for line in f:
             seq = seq + line[:-1]
     return seq
@@ -81,12 +84,12 @@ class DNAFlexSSM(DNAFlexibility):
     output_data_type = mug_datatypes.Vector
     """Configuration: the names of the two parameter files."""
     configuration = {
-        'tet_score_file':  'tetvariance256.dat',
-        'comp_score_file': 'YRcompatability.dat'
+        'tet_score_file':  'tetvariance.dat',
+        'comp_score_file': 'YRcompatibility.dat'
         }
 
     def __init__(self, configuration = {}):
-        super(DNAFlexSSM).__init__(self, configuration)
+        super(DNAFlexSSM, self).__init__(configuration)
         "Load parameter files"
         self.tet_scores = fdat(self.configuration['tet_score_file'])
         self.comp_scores= fdat(self.configuration['comp_score_file'])
@@ -111,7 +114,7 @@ class DNAFlexSSM(DNAFlexibility):
         SSM variances of each tetranucleotide (obtained by calling 
         DNAFlexibility's _get_flexibilities()).
         """
-        flexibility = self._get_flexibilities(sequence, k=6)
+        flexibility = list(self._get_flexibilities(sequence, k=6))
         return flexibility
 
 
