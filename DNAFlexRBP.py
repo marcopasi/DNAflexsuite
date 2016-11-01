@@ -12,7 +12,11 @@
 #
 
 from mug import datatypes as mug_datatypes
-from . import DNAFlexibility
+from DNAFlexibility import DNAFlexibility
+
+from pycompss.api.task import task
+from pycompss.api.constraint import constraint
+from pycompss.api.parameter import IN, OUT
 
 import urllib2, getopt
 import numpy as np
@@ -36,11 +40,11 @@ Options:
 
 References:
 [1] Lavery,R., Moakher,M., Maddocks,J.H., Petkeviciute,D.  and
-Zakrzewska,K.  (2009) Conformational analysis of nucleic acids
-revisited: Curves+.  Nucleic Acids Res., 37, 5917–5929.
+Zakrzewska,K. (2009) Conformational analysis of nucleic acids
+revisited: Curves+.  Nucleic Acids Res., 37, 5917-5929.
 [2] Hospital,A., Faustino,I., Collepardo-Guevara,R., Gonzalez,C.,
-Gelpi,J.L.  and Orozco,M. (2013) NAFlex: a web server for the study of
-nucleic acid flexibility. Nucleic Acids Res., 41, W47–W55.
+Gelpi,J.L. and Orozco,M. (2013) NAFlex: a web server for the study of
+nucleic acid flexibility. Nucleic Acids Res., 41, W47-W55.
 """
 
 #------------------------------------------------------------------------------
@@ -108,7 +112,8 @@ TGGG,GGGT,8;TGGT,TGGT,9;TGTA,TGTA,9;TGTC,TGTC,9;TGTG,TGTG,9;TGTT,AAAC,27;\
 TTAA,TAAT,8;TTAC,TAAG,29;TTAG,TAAC,29;TTAT,AAAT,30;TTCA,GAAT,29;TTCC,AGGA,27;\
 TTCG,GAAC,29;TTCT,GAAA,29;TTGA,CAAT,29;TTGC,CAAG,29;TTGG,TGGT,8;TTGT,AAAC,30;\
 TTTA,AAAT,29;TTTC,GAAA,28;TTTG,AAAC,29;TTTT,AAAA,29""".split(";"))
-    ABC_tetrads = dict(zip(zip(*ABC_info)[0], [(x[1], int(x[2])) for x in ABC_info]))
+    ABC_tetrads = dict(zip(zip(*ABC_info)[0],
+                               [(x[1], int(x[2])) for x in ABC_info]))
 
     def _ABC_tetrad_position(self, tetrad):
         """
@@ -132,12 +137,27 @@ TTTA,AAAT,29;TTTC,GAAA,28;TTTG,AAAC,29;TTTT,AAAA,29""".split(";"))
         url = "http://mmb.irbbarcelona.org/NAFlex2/getFile.php?"+\
           "fileloc=../NAFlex2/NAFlex-Data/NAFlex_parmBSC1/"+\
           "NAFlex_mu{oligomer}/STIFFNESS/FORCE_CTES/{dinucleotide}.{position}.cte&type=curves".format(
-            oligomer=oligomer.lower(),
+            oligomer=oligomer,
             dinucleotide=dinucleotide.lower(),
-            position=position
-            )
+            position=position)
 
-        return np.loadtxt(urllib2.urlopen(url))
+        response = urllib2.urlopen(url)
+        
+        if response.getcode() is not 200 or \
+          response.info().get("content-length") == '0':
+            exc_str = "<{url}>"
+            if response.geturl() != url:
+                exc_str += " [redirected to <{url}>]".format(
+                    url = response.geturl())
+            exc_str += " replied {httpcode}\nHEADERS:\n{headers}" 
+            headers = "\n".join("{}:{}".format(*item)
+                                for item in response.info().dict.iteritems())
+            raise Exception(exc_str.format(
+                url = url,
+                httpcode = response.getcode(),
+                headers = headers))
+
+        return np.loadtxt(response)
 
     def _get_flexibility_rest(self, tetrad):
         pass
@@ -154,7 +174,7 @@ TTTA,AAAT,29;TTTC,GAAA,28;TTTG,AAAC,29;TTTT,AAAA,29""".split(";"))
         stiffness matrices for each tetranucleotide (obtained by calling 
         DNAFlexibility's _get_flexibilities()) on the diagonal.
         """
-        stiffness_matrix = block_diag(list(self._get_flexibilities(sequence)))
+        stiffness_matrix = block_diag(*list(self._get_flexibilities(sequence)))
         return stiffness_matrix
 
 
