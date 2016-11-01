@@ -12,10 +12,14 @@
 #
 
 from mug import datatypes as mug_datatypes
-from . import DNAFlexibility
+from DNAFlexibility import DNAFlexibility
+
+from pycompss.api.task import task
+from pycompss.api.constraint import constraint
+from pycompss.api.parameter import IN, OUT
 
 from subprocess import Popen, PIPE
-import tempfile 
+import tempfile, sys
 import numpy as np
 
 #------------------------------------------------------------------------------
@@ -25,7 +29,14 @@ arbitrary sequence by using the  cgDNA tool.  cgDNA uses an MD-derived
 parameter  set to  predict stiffness  matrices  as a  function of  the
 Curves+ intra-base-pair  and inter-base-pair helical  parameters.  For
 more  information see  the  following references.   If  you find  this
-software useful, please cite the following references.
+software useful, please cite the following references. Requires a 
+working installation of GNU Octave, and of cgDNA in the Octave path.
+
+Usage:
+DNAFlexRB.py [options] <SEQUENCE>
+
+Options:
+-h (--help)		Display this help.
 
 References:
 [1] Gonzalez,O., Petkeviciute,D.  and Maddocks,J.H.  (2013) A
@@ -33,7 +44,6 @@ sequence-dependent rigid-base model of DNA. J Chem Phys, 138, 055102.
 [2] Petkeviciute,D., Pasi,M., Gonzalez,O., and Maddocks,J.H. (2014)
 cgDNA: a software package for the prediction of sequence-dependent
 coarse-grain free energies of B-form DNA. Nucleic Acids Res., 42, e153-
-
 """
 
 #------------------------------------------------------------------------------
@@ -42,9 +52,19 @@ class DNAFlexRB(DNAFlexibility):
     output_data_type = mug_datatypes.Matrix
     """Configuration: the name of the parameter file."""
     configuration = {
+        'cgDNApath': None,
         'cgDNAparamset': 'cgDNAparamset2.mat'
         }
     
+    def _is_error(self, stderr):
+        """
+        Parse the standard error stream from an Octave session to assess 
+        whether an error was reported.
+        """
+        for line in stderr.split("\n"):
+            if line.startswith("error:"): return True
+        return False
+        
     def _get_stiffness_matrix(self, sequence):
         """
         Generate the full-oligomer stiffness matrix by running an octave
@@ -53,6 +73,11 @@ class DNAFlexRB(DNAFlexibility):
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".m") as octave_script,\
             tempfile.NamedTemporaryFile(mode="w", suffix=".dat") as output_matrix:
+            
+            if self.configuration['cgDNApath'] is not None:
+                octave_script.write(
+                    "addpath {}\n".format(self.configuration['cgDNApath']))
+                
             octave_script.write("""\
 sequence = '{sequence}';
 params = load('{paramset}');
@@ -70,7 +95,10 @@ save -ascii {output} stiff;""".format(
                                   shell=False)
             predict.wait()
             err = predict.stderr.read()
-            if err:
+            if self._is_error(err):
+                with open(octave_script.name) as error_script:
+                    sys.stderr.write("SCRIPT:\n"+error_script.read())
+                err = "Octave Error! Standard error stream content starts on next line:\n"+err
                 raise Exception(err)
             return np.loadtxt(output_matrix.name)
 
