@@ -20,6 +20,7 @@ from pycompss.api.parameter import IN, OUT
 
 from itertools import imap
 
+#------------------------------------------------------------------------------
 def ogrouper(seq, size):
     """
     Yield overlapping groupings of size =size= from sequence =seq=.
