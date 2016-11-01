@@ -31,7 +31,11 @@ This finer discretisation of the conformational space of DNA results in improved
 
 # References
 [Lavery 2009] Lavery,R., Moakher,M., Maddocks,J.H., Petkeviciute,D.  and Zakrzewska,K. (2009) Conformational analysis of nucleic acids revisited: Curves+. *Nucleic Acids Res.*, 37, 5917-5929.
+
 [Hospital 2013] Hospital,A., Faustino,I., Collepardo-Guevara,R., Gonzalez,C., Gelpi,J.L. and Orozco,M. (2013) NAFlex: a web server for the study of nucleic acid flexibility. *Nucleic Acids Res.*, 41, W47-W55.
+
 [Pasi 2016] Pasi,M., Triantafyliou,S., Shkurti,A. and Laughton,C.A. (2016) *in preparation*
+
 [Gonzalez 2013] Gonzalez,O., Petkeviciute,D.  and Maddocks,J.H.  (2013) A sequence-dependent rigid-base model of DNA. *J Chem Phys*, 138, 055102.
+
 [Petkeviciute 2014] Petkeviciute,D., Pasi,M., Gonzalez,O., and Maddocks,J.H. (2014) cgDNA: a software package for the prediction of sequence-dependent coarse-grain free energies of B-form DNA. *Nucleic Acids Res.*, 42, e153-
